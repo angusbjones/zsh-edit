@@ -37,6 +37,11 @@ for widget in {{back,for}ward,{backward-,}kill}-{sub,shell-}word; do
   zle -N "$widget" .edit.move-word
 done
 
+# Treat every non-alnum char as a subword boundary (similar to IDE-style
+# subword nav) so `_`, `-`, `.`, `/` etc. each split. Override per-widget
+# via the same zstyle.
+zstyle ':edit:*' word-chars ''
+
 .edit.bind() {
   local widget=$1
   shift
@@ -48,14 +53,14 @@ done
 
 bindkey "$backspace"  backward-delete-char
 bindkey "$delete"     delete-char
-.edit.bind backward-subword         '^[^B'  "$ctrl_left[@]"   "$alt_ctrl_left[@]"
-.edit.bind  forward-subword         '^[^F'  "$ctrl_right[@]"  "$alt_ctrl_right[@]"
+.edit.bind backward-subword         '^[^B'  "$alt_ctrl_left[@]"
+.edit.bind  forward-subword         '^[^F'  "$alt_ctrl_right[@]"
 .edit.bind backward-shell-word      '^[b'   "$alt_left[@]"    "$shift_left[@]"
 .edit.bind  forward-shell-word      '^[f'   "$alt_right[@]"   "$shift_right[@]"
 .edit.bind beginning-of-line        '^A'    "$home[@]"        '^X'"$^left[@]"
 .edit.bind       end-of-line        '^E'    "$end[@]"         '^X'"$^right[@]"
-.edit.bind backward-kill-subword    '^H'    "$ctrl_backspace[@]"  "$alt_ctrl_backspace[@]"
-.edit.bind          kill-subword    '^[^D'  "$ctrl_delete[@]"     "$alt_ctrl_delete[@]"
+.edit.bind backward-kill-subword    '^H'    "$alt_ctrl_backspace[@]"
+.edit.bind          kill-subword    '^[^D'  "$alt_ctrl_delete[@]"
 .edit.bind backward-kill-shell-word '^W'    "$alt_backspace[@]"   "$shift_backspace[@]"
 .edit.bind          kill-shell-word '^[d'   "$alt_delete[@]"      "$shift_backspace[@]"
 # Uncomment to restore the extra line-kill key combos (^U / ^K themselves stay

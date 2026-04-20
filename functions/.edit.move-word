@@ -54,15 +54,40 @@ else  # subword
   zstyle -s ":edit:$WIDGET:" word-chars wordchars &&
       local +h WORDCHARS=$wordchars
 
+  # Each jump is either (a) a camelCase-split word-run, or (b) a run of the
+  # *same* non-word char — so `--` is one stop, `/?*.` is four. Glob lacks
+  # pattern backrefs, so the same-char run is measured with a loop.
   local subword='([[:WORD:]]#~*[[:lower:]]*[[:upper:]]*)'
   local blanks='[[:blank:]]##'
-  local other='[^[:WORD:][:blank:]]##'
+  local -i n=0
 
   if [[ $WIDGET == *backward-* ]]; then
-    catch=${(M)LBUFFER%%(${~other}${~blanks}|${~subword}(${~blanks}|${~other}|))}
+    local tail_blanks=${(M)LBUFFER%%${~blanks}}
+    local before=${LBUFFER[1,${#LBUFFER}-${#tail_blanks}]}
+    if [[ -z $before ]]; then
+      catch=$tail_blanks
+    elif [[ ${before[-1]} == [[:WORD:]] ]]; then
+      catch=${(M)before%%${~subword}}${tail_blanks}
+    else
+      local ch=${before[-1]}
+      n=1
+      while [[ ${before[-(n+1)]} = "$ch" ]]; do (( n++ )); done
+      catch=${before[-n,-1]}${tail_blanks}
+    fi
 
   else  # forward
-    catch=${(M)RBUFFER##(${~blanks}${~other}|(${~blanks}|${~other}|)${~subword})}
+    local head_blanks=${(M)RBUFFER##${~blanks}}
+    local rest=${RBUFFER[${#head_blanks}+1,-1]}
+    if [[ -z $rest ]]; then
+      catch=$head_blanks
+    elif [[ ${rest[1]} == [[:WORD:]] ]]; then
+      catch=${head_blanks}${(M)rest##${~subword}}
+    else
+      local ch=${rest[1]}
+      n=1
+      while [[ ${rest[n+1]} = "$ch" ]]; do (( n++ )); done
+      catch=${head_blanks}${rest[1,n]}
+    fi
   fi
 fi
 

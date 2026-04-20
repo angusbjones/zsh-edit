@@ -97,8 +97,8 @@ command](https://zsh.sourceforge.io/Doc/Release/Zsh-Line-Editor.html#Zle-Builtin
 |-|-:|-:|-:
 |Redo (reverse Undo)                                                                         |<kbd>Alt</kbd><kbd>/</kbd>
 ||
-|Backward [subword](#subword-movement)|<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>B</kbd>  |<kbd>Ctrl</kbd><kbd>←</kbd>|<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>←</kbd>
-|Forward [subword](#subword-movement) |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>F</kbd>  |<kbd>Ctrl</kbd><kbd>→</kbd>|<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>→</kbd>
+|Backward [subword](#subword-movement)|<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>B</kbd>  |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>←</kbd>
+|Forward [subword](#subword-movement) |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>F</kbd>  |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>→</kbd>
 |Backward shell word                  |<kbd>Alt</kbd><kbd>B</kbd>                 |<kbd>Alt</kbd><kbd>←</kbd> |<kbd>Shift</kbd><kbd>←</kbd>
 |Forward shell word                   |<kbd>Alt</kbd><kbd>F</kbd>                 |<kbd>Alt</kbd><kbd>→</kbd> |<kbd>Shift</kbd><kbd>→</kbd>
 |Beginning of line                    |<kbd>Ctrl</kbd><kbd>A</kbd>                |<kbd>Home</kbd>            |<kbd>Ctrl</kbd><kbd>X</kbd> <kbd>←</kbd>
@@ -108,8 +108,8 @@ command](https://zsh.sourceforge.io/Doc/Release/Zsh-Line-Editor.html#Zle-Builtin
 ||
 |Backward delete character                  |                                         |<kbd>⌫</kbd>
 |Forward delete character                   |                                         |<kbd>⌦</kbd>
-|Backward kill [subword](#subword-movement) |<kbd>Ctrl</kbd><kbd>H</kbd>              |<kbd>Ctrl</kbd><kbd>⌫</kbd>                |<kbd>Alt</kbd><kbd>Ctrl</kbd><kbd>⌫</kbd>
-|Forward kill [subword](#subword-movement)  |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>D</kbd>|<kbd>Ctrl</kbd><kbd>⌦</kbd>                |<kbd>Alt</kbd><kbd>Ctrl</kbd><kbd>⌦</kbd>
+|Backward kill [subword](#subword-movement) |<kbd>Ctrl</kbd><kbd>H</kbd>              |<kbd>Alt</kbd><kbd>Ctrl</kbd><kbd>⌫</kbd>
+|Forward kill [subword](#subword-movement)  |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>D</kbd>|<kbd>Alt</kbd><kbd>Ctrl</kbd><kbd>⌦</kbd>
 |Backward kill shell word                   |<kbd>Ctrl</kbd><kbd>W</kbd>              |<kbd>Alt</kbd><kbd>⌫</kbd>                 |<kbd>Shift</kbd><kbd>⌫</kbd>
 |Forward kill shell word                    |<kbd>Alt</kbd><kbd>D</kbd>               |<kbd>Alt</kbd><kbd>⌦</kbd>                 |<kbd>Shift</kbd><kbd>⌦</kbd>
 
@@ -173,36 +173,32 @@ fail to stop on many of the positions that we humans see as word boundaries:
 # <   <   <     <         <      <    <               <     <
 ```
 
-_Zsh Edit_ adds new widgets with better parsing rules that can find all the word boundaries that matter to us as humans.
-Additionally, it adds smarter movement: If the cursor is inside a word, it will move to the beginning or end of that
-same word, not the next one.  This way, you can quickly toggle between the beginning and the end of each word.
+_Zsh Edit_ adds new widgets with better parsing rules that can find all the word boundaries that matter to us as humans.  The behaviour takes cues from IDE-style subword navigation (VS Code, GoLand) but is tuned for shell editing, so it sits between naive word movement and the shell-word family (which parses via Zsh's shell lexer).  Each jump lands on either:
 
-For example:
+* a camelCase-split word run (so `camelCaseWord` is three stops: `camel`, `Case`, `Word`), **or**
+* a run of the _same_ non-word character (so `--` is one stop, but `/?*.` is four).
+
+Leading whitespace is attached to the following segment:
 
 ```zsh
-# Zsh Edit with WORDCHARS=''
-#   >   >     >       >  >     >    >     >   >   >  >  >      >
+# Zsh Edit (default zstyle ':edit:*' word-chars '')
+#   >>  >>    >       >  >     >>   >     >   >   > >>  >>>>>  >
 % ENV_VAR=value command --option-flag camelCaseWord ~/dir/?*.ext
-# <   <   <     <       < <      <    <    <   <    < <      <
+# <  <<  <<     <       < <     <<    <    <   <    <<<  <<<<<
 ```
 
-To stop a character from being treated as a subword separator, simply add it to `$WORDCHARS`.  For example, by treating
-`~`, `*` and `?` as word characters, you can get more precise subword movement in path strings:
+This fork ships `zstyle ':edit:*' word-chars ''` as the default, so `_`, `-`, `.`, `/` etc. all act as subword boundaries.  To _stop_ a character from being treated as a boundary, include it in `word-chars`.  For example, by treating `~`, `*` and `?` as word characters, you get more precise subword movement in path strings:
 
 ```zsh
-# Zsh Edit with WORDCHARS='~*?'
-#  > >   >  >   >
+# Zsh Edit with zstyle ':edit:*' word-chars '~*?'
+#  > >>  >> >>  >
 % cd ~/dir/?*.ext
-# <  < <   <  <
+# <  <<<  << <<
 ```
 
-If you don't want to change your `$WORDCHARS` globally, you can instead use the following:
+If you prefer to change `$WORDCHARS` globally instead, that works too — when the zstyle is unset, the subword widgets fall back to the inherited `$WORDCHARS`.
 
-```zsh
-zstyle ':edit:*' word-chars '~*?'
-```
-
-This will change `$WORDCHARS` only for the widgets provided by Zsh Edit.  The key format is `:edit:<widget-name>:` (with a trailing colon), so you can also scope overrides to a single widget — for example, to keep `_` as a boundary when moving forward but not when moving backward:
+The zstyle key format is `:edit:<widget-name>:` (with a trailing colon), so you can also scope overrides to a single widget — for example, to keep `_` inside words only when moving backward:
 
 ```zsh
 zstyle ':edit:backward-subword:' word-chars '_'
