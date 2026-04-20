@@ -58,8 +58,10 @@ bindkey "$delete"     delete-char
 .edit.bind          kill-subword    '^[^D'  "$ctrl_delete[@]"     "$alt_ctrl_delete[@]"
 .edit.bind backward-kill-shell-word '^W'    "$alt_backspace[@]"   "$shift_backspace[@]"
 .edit.bind          kill-shell-word '^[d'   "$alt_delete[@]"      "$shift_backspace[@]"
-.edit.bind backward-kill-line       '^U'    "$shift_ctrl_backspace[@]"  '^X'"$backspace"
-.edit.bind          kill-line       '^K'    "$shift_ctrl_delete[@]"     '^X'"$delete"
+# Uncomment to restore the extra line-kill key combos (^U / ^K themselves stay
+# bound via stock zsh):
+# .edit.bind backward-kill-line       '^U'    "$shift_ctrl_backspace[@]"  '^X'"$backspace"
+# .edit.bind          kill-line       '^K'    "$shift_ctrl_delete[@]"     '^X'"$delete"
 
 .beginning-of-buffer() { CURSOR=0 }
       .end-of-buffer() { CURSOR=$#BUFFER }
@@ -73,8 +75,8 @@ bindkey -M menuselect "$page_down" forward-word
 unfunction .edit.bind
 
 
-zle -N recover-line .edit.recover-line
-bindkey -M emacs '^[^G' recover-line
+# zle -N recover-line .edit.recover-line
+# bindkey -M emacs '^[^G' recover-line
 
 
 [[ -v ZSH_AUTOSUGGEST_PARTIAL_ACCEPT_WIDGETS ]] ||
@@ -84,41 +86,44 @@ ZSH_AUTOSUGGEST_PARTIAL_ACCEPT_WIDGETS+=(
     forward-{shell-,sub}word
 )
 
-zle -N find-replace-char .edit.find-replace
-bindkey -M emacs '^]' find-replace-char
+# zle -N find-replace-char .edit.find-replace
+# bindkey -M emacs '^]' find-replace-char
 
 
-typeset -ga _edit_yank_widgets=( yank {,reverse-}yank-pop vi-put-{before,after} )
-for widget in $_edit_yank_widgets; do
-  zle -N "$widget" .edit.visual-yank
-  zstyle ":autocomplete:${widget}:*" ignore yes
-done
-bindkey -M emacs '^[/' redo \
-                 '^[Y' reverse-yank-pop
+# Uncomment to enable the clipboard viewer (kill-ring shown below the prompt
+# on yank/yank-pop/vi-put-*) and reverse-yank-pop. The precmd hook is dead
+# plumbing without the yank overrides.
+# typeset -ga _edit_yank_widgets=( yank {,reverse-}yank-pop vi-put-{before,after} )
+# for widget in $_edit_yank_widgets; do
+#   zle -N "$widget" .edit.visual-yank
+#   zstyle ":autocomplete:${widget}:*" ignore yes
+# done
+#
+# # Make sure yank widgets are ignored by Autosuggest.
+# add-zsh-hook precmd zsh-edit-precmd
+#
+# # Make sure we always run before Autosuggest, so we don't overwrite its default ignore list.
+# typeset -gaU precmd_functions=( zsh-edit-precmd $precmd_functions )
+#
+# zsh-edit-precmd() {
+#   add-zsh-hook -d precmd zsh-edit-precmd
+#   unfunction zsh-edit-precmd
+#
+#   [[ -v ZSH_AUTOSUGGEST_IGNORE_WIDGETS ]] &&
+#       ZSH_AUTOSUGGEST_IGNORE_WIDGETS+=( $_edit_yank_widgets )
+#   unset _edit_yank_widgets
+# }
 
-# Make sure yank widgets are ignored by Autosuggest.
-add-zsh-hook precmd zsh-edit-precmd
 
-# Make sure we always run before Autosuggest, so we don't overwrite its default ignore list.
-typeset -gaU precmd_functions=( zsh-edit-precmd $precmd_functions )
+bindkey -M emacs '^[/' redo
+# bindkey -M emacs '^[Y' reverse-yank-pop
 
-zsh-edit-precmd() {
-  add-zsh-hook -d precmd zsh-edit-precmd
-  unfunction zsh-edit-precmd
-
-  [[ -v ZSH_AUTOSUGGEST_IGNORE_WIDGETS ]] &&
-      ZSH_AUTOSUGGEST_IGNORE_WIDGETS+=( $_edit_yank_widgets )
-  unset _edit_yank_widgets
-}
-
-
-bindkey -M emacs  '^[/' redo \
-                  '^[Y' reverse-yank-pop
-
-for widget in {insert-{last,first},copy-{prev,next}}-word; do
-  zle -N "$widget" .edit.insert-word
-done
-bindkey -M emacs  '^[.'  insert-last-word \
-                  '^[,'  insert-first-word \
-                  '^[^_' copy-prev-word \
-                  '^[_'  copy-next-word
+# Uncomment to enable repeat-word widgets (Alt-. last word of previous cmd,
+# Alt-, first word, Alt-_ / Ctrl-Alt-_ cycle through previous cmd's words):
+# for widget in {insert-{last,first},copy-{prev,next}}-word; do
+#   zle -N "$widget" .edit.insert-word
+# done
+# bindkey -M emacs  '^[.'  insert-last-word \
+#                   '^[,'  insert-first-word \
+#                   '^[^_' copy-prev-word \
+#                   '^[_'  copy-next-word

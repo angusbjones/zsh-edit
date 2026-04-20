@@ -3,6 +3,8 @@
 
 _Zsh Edit_ is a set of handy utilities for making life easier on the Zsh command line.
 
+> **About this fork.** This is a trimmed fork of [marlonrichert/zsh-edit](https://github.com/marlonrichert/zsh-edit) that ships the navigation widgets (subword/shell-word movement + kills, line/buffer movement, Redo) and the `bind` command.  The clipboard viewer, find-replace, recover-line, repeat-word, reverse-yank-pop, and the extra line-kill shortcuts are commented out in `functions/zsh-edit` — uncomment the relevant block to re-enable any of them.  The widget source files are untouched.
+
 
 ## Requirements
 
@@ -47,13 +49,13 @@ To update:
 
 ## `bind` Command
 
-Bind shell commands directly to keyboard shortcuts.  What's more, when using these, your current command line will be
-left intact.
+`bind` is a drop-in extension of Zsh's built-in [`bindkey`](https://zsh.sourceforge.io/Doc/Release/Zsh-Line-Editor.html#Zle-Builtins): it accepts the same keymap flags (e.g. `-M emacs`) and the same `KEY WIDGET` pairs, but it also lets you bind ordinary shell commands.  When the second argument isn't a widget name, `bind` wraps it as a throwaway ZLE widget so the command runs without accepting or clearing your current line:
 ```zsh
 bind  '^[:' 'cd ..'
 bind  '^[-' 'pushd -1' \
       '^[=' 'pushd +0'
 ```
+The wrapping widget is named with a leading `.` so that `zsh-autosuggestions` and `zsh-syntax-highlighting` ignore it.
 
 List duplicate keybindings in the main keymap or another one.
 ```zsh
@@ -94,14 +96,6 @@ command](https://zsh.sourceforge.io/Doc/Release/Zsh-Line-Editor.html#Zle-Builtin
 |Command|`emacs` keymap|`main` keymap||
 |-|-:|-:|-:
 |Redo (reverse Undo)                                                                         |<kbd>Alt</kbd><kbd>/</kbd>
-|Recover last line aborted with <kbd>Ctrl</kbd><kbd>C</kbd> or <kbd>Ctrl</kbd><kbd>G</kbd>   |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>G</kbd>
-|[Replace all](#Replace-all-occurences-of-a-character)                                       |<kbd>Ctrl</kbd><kbd>]</kbd>
-|[Reverse yank pop](#clipboard-viewer)                                                       |<kbd>Alt</kbd><kbd>Y</kbd>
-||
-|Repeat word up   |<kbd>Alt</kbd><kbd>.</kbd>
-|Repeat word down |<kbd>Alt</kbd><kbd>,</kbd>
-|Repeat word left |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>-</kbd>
-|Repeat word right|<kbd>Alt</kbd><kbd>Shift</kbd><kbd>-</kbd>
 ||
 |Backward [subword](#subword-movement)|<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>B</kbd>  |<kbd>Ctrl</kbd><kbd>←</kbd>|<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>←</kbd>
 |Forward [subword](#subword-movement) |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>F</kbd>  |<kbd>Ctrl</kbd><kbd>→</kbd>|<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>→</kbd>
@@ -118,11 +112,27 @@ command](https://zsh.sourceforge.io/Doc/Release/Zsh-Line-Editor.html#Zle-Builtin
 |Forward kill [subword](#subword-movement)  |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>D</kbd>|<kbd>Ctrl</kbd><kbd>⌦</kbd>                |<kbd>Alt</kbd><kbd>Ctrl</kbd><kbd>⌦</kbd>
 |Backward kill shell word                   |<kbd>Ctrl</kbd><kbd>W</kbd>              |<kbd>Alt</kbd><kbd>⌫</kbd>                 |<kbd>Shift</kbd><kbd>⌫</kbd>
 |Forward kill shell word                    |<kbd>Alt</kbd><kbd>D</kbd>               |<kbd>Alt</kbd><kbd>⌦</kbd>                 |<kbd>Shift</kbd><kbd>⌦</kbd>
-|Backward kill line                         |<kbd>Ctrl</kbd><kbd>U</kbd>              |<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>⌫</kbd>|<kbd>Ctrl</kbd><kbd>X</kbd> <kbd>⌫</kbd>
-|Forward kill line                          |<kbd>Ctrl</kbd><kbd>K</kbd>              |<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>⌦</kbd>|<kbd>Ctrl</kbd><kbd>X</kbd> <kbd>⌦</kbd>
+
+The following bindings from upstream are commented out in `functions/zsh-edit` — uncomment to re-enable:
+
+|Command|`emacs` keymap|`main` keymap||
+|-|-:|-:|-:
+|Recover last line aborted with <kbd>Ctrl</kbd><kbd>C</kbd> or <kbd>Ctrl</kbd><kbd>G</kbd>   |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>G</kbd>
+|[Replace all](#Replace-all-occurences-of-a-character)                                       |<kbd>Ctrl</kbd><kbd>]</kbd>
+|[Reverse yank pop](#clipboard-viewer)                                                       |<kbd>Alt</kbd><kbd>Y</kbd>
+|Repeat word up                                                                              |<kbd>Alt</kbd><kbd>.</kbd>
+|Repeat word down                                                                            |<kbd>Alt</kbd><kbd>,</kbd>
+|Repeat word left                                                                            |<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>-</kbd>
+|Repeat word right                                                                           |<kbd>Alt</kbd><kbd>Shift</kbd><kbd>-</kbd>
+|Backward kill line (extra combos — stock <kbd>Ctrl</kbd><kbd>U</kbd> still works)           |                             |<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>⌫</kbd>|<kbd>Ctrl</kbd><kbd>X</kbd> <kbd>⌫</kbd>
+|Forward kill line (extra combos — stock <kbd>Ctrl</kbd><kbd>K</kbd> still works)            |                             |<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>⌦</kbd>|<kbd>Ctrl</kbd><kbd>X</kbd> <kbd>⌦</kbd>
+
+The clipboard viewer also depends on a `precmd` hook that's commented out with the yank widgets.
 
 
 ## Replace All Occurences of a Character
+
+> _Disabled by default in this fork.  Uncomment the `find-replace-char` block in `functions/zsh-edit` to re-enable._
 
 Press <kbd>Ctrl</kbd><kbd>]</kbd> followed by two characters and each substring consisting of one or
 more occurences of the first character will be replaced entirely with the second character.  This is
@@ -135,6 +145,8 @@ on the whole command line.
 
 
 ## Clipboard Viewer
+
+> _Disabled by default in this fork.  Uncomment the clipboard-viewer block (yank widgets + `precmd` plumbing) in `functions/zsh-edit` to re-enable, along with the `reverse-yank-pop` binding just below it._
 
 Whenever you use <kbd>yank</kbd> (`^Y` in `emacs`), <kbd>vi-put-after</kbd> (`p` in `vicmd`) or
 <kbd>vi-put-after</kbd> (`P` in `vicmd`) to paste a kill into the command line, _Zsh Edit_ will list
@@ -190,7 +202,13 @@ If you don't want to change your `$WORDCHARS` globally, you can instead use the 
 zstyle ':edit:*' word-chars '~*?'
 ```
 
-This will change `$WORDCHARS` only for the widgets provided by Zsh Edit.
+This will change `$WORDCHARS` only for the widgets provided by Zsh Edit.  The key format is `:edit:<widget-name>:` (with a trailing colon), so you can also scope overrides to a single widget — for example, to keep `_` as a boundary when moving forward but not when moving backward:
+
+```zsh
+zstyle ':edit:backward-subword:' word-chars '_'
+```
+
+Only the subword family (`{forward,backward,kill,backward-kill}-subword`) reads this zstyle; shell-word widgets parse the buffer via Zsh's shell lexer and ignore `$WORDCHARS` entirely.
 
 
 ## Author
